@@ -1,0 +1,42 @@
+FROM devkitpro/devkitppc:20180522
+
+# Install devkitARM. Needed to build mocha.
+ENV DEVKITARM=${DEVKITPRO}/devkitARM
+COPY --from=devkitpro/devkitarm:20180522 $DEVKITARM $DEVKITARM
+
+# download and install xxd
+RUN wget --no-check-certificate https://snapshot.debian.org/archive/debian/20160913T102156Z/pool/main/v/vim/xxd_8.0.0003-1_amd64.deb
+RUN dpkg -i xxd_8.0.0003-1_amd64.deb
+
+# download and install p7zip
+RUN wget --no-check-certificate https://snapshot.debian.org/archive/debian/20160306T224515Z/pool/main/p/p7zip/p7zip_15.09%2Bdfsg-3_amd64.deb
+RUN dpkg -i p7zip_15.09+dfsg-3_amd64.deb
+
+# download and install p7zip-full
+RUN wget --no-check-certificate https://snapshot.debian.org/archive/debian/20160306T224515Z/pool/main/p/p7zip/p7zip-full_15.09%2Bdfsg-3_amd64.deb
+RUN dpkg -i p7zip-full_15.09+dfsg-3_amd64.deb
+
+# download dependencies
+RUN wget https://github.com/Maschell/dynamic_libs/raw/lib/libs/portlibs.zip
+RUN 7za x -r portlibs.zip -o${DEVKITPRO}
+
+# download libiosuhax
+RUN git clone https://github.com/Maschell/libfat && cd libfat && git checkout v1.1.3a
+
+# download libfat
+RUN git clone https://github.com/dimok789/libiosuhax && cd libiosuhax && git checkout v0.3
+
+# download SDCafiine
+RUN git clone https://github.com/Maschell/SDCafiine.git && cd SDCafiine && git checkout 1.4 && git submodule update --init --recursive
+
+# make libiosuhax
+WORKDIR libiosuhax
+RUN make && make install
+
+# make libfat
+WORKDIR /libfat
+RUN make wiiu-release && make -C wiiu install
+
+# make SDCafiine
+WORKDIR /SDCafiine
+RUN make
